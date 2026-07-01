@@ -117,12 +117,12 @@ int main()
     {
         .h = 6.6f,
         .spacing = params.h,
-        .dt = 0.0015f,
+        .dt = 0.0025f,
         .kernel_support = 2.0f * params.spacing,
         .restDensity = 1.1f,
         .stiffness = 1000.f,
-        .viscosity = 1.f,
-        .gravity = {0.f, 7.8f},
+        .viscosity = 100.f,
+        .gravity = {0.f, 9.8f},
         .mass = params.restDensity * params.spacing * params.spacing
     };
 
@@ -132,6 +132,7 @@ int main()
 
     // createFluid(particles, params.mass, params);
     // createContainer(particles, params.mass, params);
+    int trackedParticle = 0;
 
 
 
@@ -145,7 +146,6 @@ int main()
     );
 
     particles.push_back(falling);
-    int trackedParticle = particles.size() - 1;
 
 
 

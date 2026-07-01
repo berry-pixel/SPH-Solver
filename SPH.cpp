@@ -120,7 +120,7 @@ void calculatePressure (std::vector<particle>& particles, float stiffnessCoeffic
 
         p.pressure = pressure;
 
-        // p.pressure = std::max(0.f, pressure);
+        p.pressure = std::max(0.f, pressure);
 
     }
 
