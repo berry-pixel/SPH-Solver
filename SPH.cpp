@@ -1,4 +1,10 @@
 #include "SPH.h"
+#include "particle.h"
+#include "utilities.h"
+#include <SFML/Graphics/Color.hpp>
+#include <algorithm>
+#include <cmath>
+#include <iostream>
 
 
 float distance(sf::Vector2f xi, sf::Vector2f xj) {
@@ -16,24 +22,39 @@ float Kernel(sf::Vector2f xi, sf::Vector2f xj, float h) {
 
     float distance_xi_xj = distance(xi, xj);
 
-    float alpha = (5/(14.0f * M_PI * h * h));
+    float alpha = (5/(14.0f * M_PI));
 
-    float d = distance_xi_xj/h;
 
-    float t1 = (1 - d) > 0 ? (1-d) : 0;
-    float t2 = (2 - d) > 0 ? (2-d) : 0;
+    float q = distance_xi_xj/h;
 
-    float kernel = alpha * (t2*t2*t2 - 4*t1*t1*t1);
 
+
+    float t = 0;
+
+    if (0 <= q && q < 1) {
+
+        t = (2 - q) * (2 - q) * (2 - q)  - 4 * (1-q) * (1-q) * (1-q);
+
+    } else if (1 <= q && q < 2) {
+        t = (2 - q) * (2 - q) * (2 - q);
+    } else {
+        t = 0;
+    }
+
+
+    float kernel = alpha * t / (h * h);
+
+
+    std::cout<<"\n kernel debugging :"<<kernel;
     return kernel;
 }
 
 sf::Vector2f firstDerivativeKernel(sf::Vector2f xi, sf::Vector2f xj, float h) {
 
-    float r = distance(xi, xj);
+    float d = distance(xi, xj);
 
 
-    if (r < 1e-6f)
+    if (d < 1e-6f)
     {
         return sf::Vector2f(0.f, 0.f);
     }
@@ -41,13 +62,24 @@ sf::Vector2f firstDerivativeKernel(sf::Vector2f xi, sf::Vector2f xj, float h) {
 
     float alpha = (5/(14.0f * M_PI * h * h));
 
-    float d = r/h;
+    float q = d/h;
+
+    float t = 0;
+
+    if (0 <= q && q < 1) {
+
+        t = -3 * (2 - q) * (2 - q)  + 12 * (1-q) * (1-q);
+
+    } else if (1 <= q && q < 2) {
+        t = -3 * (2 - q) * (2 - q);
+    } else {
+        t = 0;
+    }
 
 
-    float t1 = (1 - d) > 0 ? (1-d) : 0;
-    float t2 = (2 - d) > 0 ? (2-d) : 0;
+    sf::Vector2f w1 = alpha * ((xi - xj) / (d  * h )) * t;
 
-    sf::Vector2f w1 = alpha * ((xi - xj) / (d * h * h)) * (-3 * t2 * t2 + 12 * t1 * t1);
+
 
     return w1;
 
@@ -55,7 +87,9 @@ sf::Vector2f firstDerivativeKernel(sf::Vector2f xi, sf::Vector2f xj, float h) {
 
 
 // Calculations
-void calculateDensity (std::vector<particle>& particles, float h) {
+void calculateDensity (std::vector<particle>& particles, float h, SPHParameters params) {
+
+    std::cout<<"\n Debugging particles mass: "<< params.mass;
     for(particle& p: particles) {
 
         float density = 0.0f;
@@ -63,21 +97,30 @@ void calculateDensity (std::vector<particle>& particles, float h) {
         for (int neighborIndex : p.neighbors) {
 
             particle& neighbor = particles[neighborIndex];
+            std::cout<<"\nDebugging neighbours: " << neighborIndex;
 
-            density = density + neighbor.mass * Kernel(p.position, neighbor.position, h);
+            density = density + neighbor.mass * Kernel(p.position, neighbor.position, params.spacing);
 
         }
 
         p.density = density;
+
 
     }
 }
 
 void calculatePressure (std::vector<particle>& particles, float stiffnessCoefficient, float restDensity ) {
 
+
+
+
     for(particle& p: particles) {
 
-        p.pressure = stiffnessCoefficient * ((p.density / restDensity) - 1);
+        float pressure = stiffnessCoefficient * ((p.density / restDensity) - 1);
+
+        p.pressure = pressure;
+
+        // p.pressure = std::max(0.f, pressure);
 
     }
 
@@ -145,6 +188,11 @@ void findNeighbours(
     for (auto& particle : particles)
     {
         particle.neighbors.clear();
+        if(particle.isStatic) {
+            particle.color = sf::Color::Green;
+        } else {
+            particle.color = sf::Color::Blue;
+        }
     }
 
     for (int i = 0; i < particles.size(); i++)
@@ -164,10 +212,19 @@ void findNeighbours(
                 delta.x * delta.x +
                 delta.y * delta.y;
 
+
             if (distSquared < smoothingRadiusSquared)
             {
+
+
+                // for debugging:
+                if (i == 0) {
+                    particles[j].color = sf::Color::White;
+                }
+
                 particles[i].neighbors.push_back(j);
             }
+
         }
     }
 }

@@ -1,30 +1,16 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/Font.hpp>
+#include <algorithm>
 #include <iostream>
 #include "particle.h"
 #include "SPH.h"
 #include "utilities.h"
 
-struct SPHParameters
-{
-    float spacing;
-    float dt;
-    float kernel_support;
-
-    float restDensity;
-
-    float stiffness;
-
-    float viscosity;
-
-    sf::Vector2f gravity;
-};
-
 
 
 void createContainer(std::vector<particle>& particles, float mass, SPHParameters params)
 {
-    float spacing = 7.f;
+    float spacing = params.spacing;
 
     int width = 60;
     int height = 80;
@@ -39,8 +25,9 @@ void createContainer(std::vector<particle>& particles, float mass, SPHParameters
                 makeParticle(
                     origin + sf::Vector2f(i * spacing, layer * spacing),
                     true,
-                    sf::Color::Blue,
-                    mass
+                    sf::Color::Green,
+                    mass,
+                    params
                 )
             );
         }
@@ -54,8 +41,9 @@ void createContainer(std::vector<particle>& particles, float mass, SPHParameters
                 makeParticle(
                     origin + sf::Vector2f(layer * spacing, -i * spacing),
                     true,
-                    sf::Color::Blue,
-                    mass
+                    sf::Color::Green,
+                    mass,
+                    params
                 )
             );
         }
@@ -70,8 +58,9 @@ void createContainer(std::vector<particle>& particles, float mass, SPHParameters
                     origin + sf::Vector2f((width - 1) * spacing - layer * spacing,
                                           -i * spacing),
                     true,
-                    sf::Color::Blue,
-                    mass
+                    sf::Color::Green,
+                    mass,
+                    params
                 )
             );
         }
@@ -80,12 +69,11 @@ void createContainer(std::vector<particle>& particles, float mass, SPHParameters
 
 void createFluid(std::vector<particle>& particles, float mass, SPHParameters params)
 {
-    float spacing =5.f;
 
-    int cols = 20;
-    int rows = 20; // 50 particles total
+    int cols = 5;
+    int rows = 5; // 50 particles total
 
-    sf::Vector2f start(260.f, 200.f);
+    sf::Vector2f start(360.f, 400.f);
 
     for (int y = 0; y < rows; y++)
     {
@@ -93,10 +81,11 @@ void createFluid(std::vector<particle>& particles, float mass, SPHParameters par
         {
             particles.push_back(
                 makeParticle(
-                    start + sf::Vector2f(x * spacing, y * spacing),
+                    start + sf::Vector2f(x * params.spacing, y * params.spacing),
                     false,
                     sf::Color::Red,
-                    mass
+                    mass,
+                    params
                 )
             );
         }
@@ -114,7 +103,7 @@ int main()
     std::vector<particle> particles;
 
 
-    bool paused = false;
+    bool paused = true;
 
     const sf::Font font("arial.ttf");
     sf::Text debugText(font);
@@ -126,49 +115,53 @@ int main()
 
     SPHParameters params
     {
-        .spacing = 8.f,
-        .dt = 0.0009f,
-        .kernel_support = 1.5f * params.spacing,
-        .restDensity = 0.1f,
-        .stiffness = 600.f,
-        .viscosity = 300.f,
-        .gravity = {0.f, 10.f}
+        .h = 6.6f,
+        .spacing = params.h,
+        .dt = 0.0015f,
+        .kernel_support = 2.0f * params.spacing,
+        .restDensity = 1.1f,
+        .stiffness = 1000.f,
+        .viscosity = 1.f,
+        .gravity = {0.f, 7.8f},
+        .mass = params.restDensity * params.spacing * params.spacing
     };
 
 
-    float mass = params.restDensity * params.spacing * params.spacing;
 
 
 
-
-    // createContainer(particles, mass);
-    // createFluid(particles, mass);
+    // createFluid(particles, params.mass, params);
+    // createContainer(particles, params.mass, params);
 
 
 
     particle falling;
     falling = makeParticle(
-        {300.f, 200.f},
+        {250.f, 200.f},
         false,
         sf::Color::Red,
-        mass
+        params.mass,
+        params
     );
 
     particles.push_back(falling);
+    int trackedParticle = particles.size() - 1;
 
+
+
+
+    sf::Vector2f start(200.f, 300.f);
     for (int row = 0; row < 2; row++)
     {
         for (int col = 0; col < 30; col++)
         {
             particle p;
             p = makeParticle(
-                 {
-                200.f + col * params.spacing,
-                300.f + row * params.spacing
-                },
+                start + sf::Vector2f(col * params.spacing, row * params.spacing),
                 true,
-                sf::Color::Blue,
-                mass
+                sf::Color::Green,
+                params.mass * 10,
+                params
             );
 
 
@@ -214,7 +207,6 @@ int main()
         }
 
 
-        if (inputTimer > 0.1f)
 
         window.setKeyRepeatEnabled(false);
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::P)){
@@ -224,40 +216,19 @@ int main()
             paused = 0;
             inputTimer = 0.f;
         }
-        if ((sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up))) {
-            params.dt = params.dt - 0.001f;
-            inputTimer = 0.f;
-            std::cout<<"\nDT: "<<params.dt;
-        } else if ((sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down))) {
-            params.dt = params.dt + 0.001f;
-            inputTimer = 0.f;
 
-        } else if ((sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Q))) {
-            params.stiffness = params.stiffness - 1.0f;
-            inputTimer = 0.f;
-        } else if ((sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W))) {
-            params.stiffness = params.stiffness + 1.0f;
-            inputTimer = 0.f;
-        } else if ((sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A))) {
-            params.viscosity = params.viscosity - 1.0f;
-            inputTimer = 0.f;
-        } else if ((sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S))) {
-            params.viscosity = params.viscosity + 1.0f;
-            inputTimer = 0.f;
-        }
 
 
         if(paused == 0){
             findNeighbours(params.kernel_support, particles);
 
-            calculateDensity(particles, params.kernel_support);
+            calculateDensity(particles, params.kernel_support, params);
 
             calculatePressure(particles, params.stiffness, params.restDensity);
 
-            calculatePressureAcceleration(particles, params.kernel_support);
-            calculateViscosityAccelration(particles, params.kernel_support, params.viscosity);
+            calculatePressureAcceleration(particles, params.h);
+            calculateViscosityAccelration(particles, params.h, params.viscosity);
 
-            // std::cout<<"RUnning calcs\n";
 
             for (auto& p : particles)
             {
@@ -277,8 +248,7 @@ int main()
             }
         }
 
-        // 7. render
-        window.clear();
+        window.clear(sf::Color(72, 72, 72, 255));
 
         for (auto& p : particles)
         {
@@ -291,11 +261,31 @@ int main()
 
             if (p.isStatic)
                 c.setFillColor(p.color);
-            else
-                c.setFillColor(p.color);
+            else{
+                // float ratio = std::clamp(
+                //     p.density / params.restDensity,
+                //     0.f,
+                //     2.f
+                // );
+
+                // int red = static_cast<int>(255.f * ratio / 2.f);
+                // int blue = static_cast<int>(255.f * (1.f - ratio / 2.f));
+                // c.setFillColor(
+                //     sf::Color(red, 0, blue)
+                // );
+                c.setFillColor(
+                    sf::Color(119, 158, 203)
+                );
+
+            }
 
             window.draw(c);
         }
+
+        // std::cout
+        //   << "rho = " << particles[0].density
+        //   << " expected rho0 = " << params.restDensity
+        //   << '\n';
 
         if (hovered)
         {
@@ -310,6 +300,8 @@ int main()
                << hovered->velocity.x << ", "
                << hovered->velocity.y << ")";
 
+
+
             debugText.setString(ss.str());
 
             debugText.setPosition(
@@ -319,6 +311,46 @@ int main()
 
             window.draw(debugText);
         }
+
+        particle& p = particles[trackedParticle];
+
+        std::stringstream ss;
+
+        ss << std::fixed << std::setprecision(4);
+
+        ss << "Tracked Particle\n";
+        ss << "----------------\n";
+
+        ss << "Density:  " << p.density << '\n';
+        ss << "Pressure: " << p.pressure << '\n';
+
+        ss << "Pos X:    " << p.position.x << '\n';
+        ss << "Pos Y:    " << p.position.y << '\n';
+
+        ss << "Vel X:    " << p.velocity.x << '\n';
+        ss << "Vel Y:    " << p.velocity.y << '\n';
+
+        ss << "Pressure Acc Y: "
+           << p.pressureAcceleration.y << '\n';
+
+        ss << "Viscosity Acc Y: "
+           << p.viscosityAcceleration.y << '\n';
+
+        ss << "Neighbours: "
+           << p.neighbors.size() << '\n';
+
+        for (size_t i = 0; i < p.neighbors.size(); ++i)
+        {
+            ss << p.neighbors[i];
+            if (i + 1 < p.neighbors.size())
+                ss << ", ";
+        }
+
+        debugText.setString(ss.str());
+        debugText.setPosition({850.f, 50.f});
+
+        window.draw(debugText);
+
 
 
         window.display();
