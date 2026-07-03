@@ -1,13 +1,12 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/Font.hpp>
-#include <algorithm>
 #include <iostream>
 #include "particle.h"
 #include "SPH.h"
 #include "utilities.h"
 
 
-
+// Create a bucket like container.
 void createContainer(std::vector<particle>& particles, float mass, SPHParameters params)
 {
     float spacing = params.spacing;
@@ -70,10 +69,10 @@ void createContainer(std::vector<particle>& particles, float mass, SPHParameters
 void createFluid(std::vector<particle>& particles, float mass, SPHParameters params)
 {
 
-    int cols = 5;
-    int rows = 5; // 50 particles total
+    int cols = 20;
+    int rows = 20; // 50 particles total
 
-    sf::Vector2f start(360.f, 400.f);
+    sf::Vector2f start(360.f, 300.f);
 
     for (int y = 0; y < rows; y++)
     {
@@ -115,13 +114,13 @@ int main()
 
     SPHParameters params
     {
-        .h = 6.6f,
+        .h = 5.f,
         .spacing = params.h,
-        .dt = 0.0025f,
+        .dt = 0.0155f,
         .kernel_support = 2.0f * params.spacing,
         .restDensity = 1.1f,
-        .stiffness = 1000.f,
-        .viscosity = 100.f,
+        .stiffness = 20000.f,
+        .viscosity = 50.f,
         .gravity = {0.f, 9.8f},
         .mass = params.restDensity * params.spacing * params.spacing
     };
@@ -130,44 +129,44 @@ int main()
 
 
 
-    // createFluid(particles, params.mass, params);
-    // createContainer(particles, params.mass, params);
+    createFluid(particles, params.mass, params);
+    createContainer(particles, params.mass, params);
     int trackedParticle = 0;
 
 
 
-    particle falling;
-    falling = makeParticle(
-        {250.f, 200.f},
-        false,
-        sf::Color::Red,
-        params.mass,
-        params
-    );
+    // particle falling;
+    // falling = makeParticle(
+    //     {250.f, 200.f},
+    //     false,
+    //     sf::Color::Red,
+    //     params.mass,
+    //     params
+    // );
 
-    particles.push_back(falling);
-
-
+    // particles.push_back(falling);
 
 
-    sf::Vector2f start(200.f, 300.f);
-    for (int row = 0; row < 2; row++)
-    {
-        for (int col = 0; col < 30; col++)
-        {
-            particle p;
-            p = makeParticle(
-                start + sf::Vector2f(col * params.spacing, row * params.spacing),
-                true,
-                sf::Color::Green,
-                params.mass * 10,
-                params
-            );
 
 
-            particles.push_back(p);
-        }
-    }
+    // sf::Vector2f start(200.f, 300.f);
+    // for (int row = 0; row < 2; row++)
+    // {
+    //     for (int col = 0; col < 20; col++)
+    //     {
+    //         particle p;
+    //         p = makeParticle(
+    //             start + sf::Vector2f(col * params.spacing, row * params.spacing),
+    //             true,
+    //             sf::Color::Green,
+    //             params.mass,
+    //             params
+    //         );
+
+
+    //         particles.push_back(p);
+    //     }
+    // }
 
     float inputTimer = 0.f;
 

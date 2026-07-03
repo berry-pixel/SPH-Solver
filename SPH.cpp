@@ -111,9 +111,6 @@ void calculateDensity (std::vector<particle>& particles, float h, SPHParameters 
 
 void calculatePressure (std::vector<particle>& particles, float stiffnessCoefficient, float restDensity ) {
 
-
-
-
     for(particle& p: particles) {
 
         float pressure = stiffnessCoefficient * ((p.density / restDensity) - 1);
@@ -132,6 +129,8 @@ void calculatePressureAcceleration (std::vector<particle>& particles, float h) {
     for(particle& p: particles) {
 
         sf::Vector2f pressureAcceleration{0.0f, 0.0f};
+
+
 
         for (int neighborIndex : p.neighbors) {
 
