@@ -1,4 +1,5 @@
 #include "SPH.h"
+#include "include/constants.hpp"
 #include "particle.h"
 #include "utilities.h"
 #include <SFML/Graphics/Color.hpp>
@@ -18,14 +19,14 @@ float distance(sf::Vector2f xi, sf::Vector2f xj) {
 
 
 // Kernel functions
-float Kernel(sf::Vector2f xi, sf::Vector2f xj, float h) {
+float Kernel(sf::Vector2f xi, sf::Vector2f xj) {
 
     float distance_xi_xj = distance(xi, xj);
 
     float alpha = (5/(14.0f * M_PI));
 
 
-    float q = distance_xi_xj/h;
+    float q = distance_xi_xj/Constants::spacing;
 
 
 
@@ -42,17 +43,18 @@ float Kernel(sf::Vector2f xi, sf::Vector2f xj, float h) {
     }
 
 
-    float kernel = alpha * t / (h * h);
+    float kernel = alpha * t / (Constants::spacing * Constants::spacing);
 
 
     std::cout<<"\n kernel debugging :"<<kernel;
     return kernel;
 }
 
-sf::Vector2f firstDerivativeKernel(sf::Vector2f xi, sf::Vector2f xj, float h) {
+sf::Vector2f firstDerivativeKernel(sf::Vector2f xi, sf::Vector2f xj) {
 
     float d = distance(xi, xj);
 
+    float h = Constants::spacing;
 
     if (d < 1e-6f)
     {
@@ -87,9 +89,8 @@ sf::Vector2f firstDerivativeKernel(sf::Vector2f xi, sf::Vector2f xj, float h) {
 
 
 // Calculations
-void calculateDensity (std::vector<particle>& particles, float h, SPHParameters params) {
+void calculateDensity (std::vector<particle>& particles) {
 
-    std::cout<<"\n Debugging particles mass: "<< params.mass;
     for(particle& p: particles) {
 
         float density = 0.0f;
@@ -97,9 +98,8 @@ void calculateDensity (std::vector<particle>& particles, float h, SPHParameters 
         for (int neighborIndex : p.neighbors) {
 
             particle& neighbor = particles[neighborIndex];
-            std::cout<<"\nDebugging neighbours: " << neighborIndex;
 
-            density = density + neighbor.mass * Kernel(p.position, neighbor.position, params.spacing);
+            density = density + neighbor.mass * Kernel(p.position, neighbor.position);
 
         }
 
@@ -109,11 +109,11 @@ void calculateDensity (std::vector<particle>& particles, float h, SPHParameters 
     }
 }
 
-void calculatePressure (std::vector<particle>& particles, float stiffnessCoefficient, float restDensity ) {
+void calculatePressure ( std::vector<particle>& particles ) {
 
     for(particle& p: particles) {
 
-        float pressure = stiffnessCoefficient * ((p.density / restDensity) - 1);
+        float pressure = Constants::stiffness * ((p.density / Constants::restDensity) - 1);
 
         p.pressure = pressure;
 
@@ -124,7 +124,9 @@ void calculatePressure (std::vector<particle>& particles, float stiffnessCoeffic
 }
 
 
-void calculatePressureAcceleration (std::vector<particle>& particles, float h) {
+void calculatePressureAcceleration (std::vector<particle>& particles) {
+
+    float h = Constants::spacing;
 
     for(particle& p: particles) {
 
@@ -138,7 +140,7 @@ void calculatePressureAcceleration (std::vector<particle>& particles, float h) {
 
             float pressureTerm = (p.pressure/(p.density * p.density)) + (neighbor.pressure/(neighbor.density * neighbor.density));
 
-            pressureAcceleration = pressureAcceleration + (-neighbor.mass * pressureTerm * firstDerivativeKernel(p.position, neighbor.position, h));
+            pressureAcceleration = pressureAcceleration + (-neighbor.mass * pressureTerm * firstDerivativeKernel(p.position, neighbor.position));
 
         }
 
@@ -148,7 +150,7 @@ void calculatePressureAcceleration (std::vector<particle>& particles, float h) {
 
 }
 
-void calculateViscosityAccelration (std::vector<particle>& particles, float h, float viscosityCoefficient) {
+void calculateViscosityAccelration (std::vector<particle>& particles) {
 
      for(particle& p: particles) {
 
@@ -164,9 +166,9 @@ void calculateViscosityAccelration (std::vector<particle>& particles, float h, f
             float position_dot_product = delta_position.x * delta_position.x + delta_position.y * delta_position.y;
 
 
-            float scalar_term = (viscosityCoefficient * (neighbor.mass/neighbor.density) * (dot_product/(position_dot_product + 0.01f * h * h)));
+            float scalar_term = (Constants::viscosity * (neighbor.mass/neighbor.density) * (dot_product/(position_dot_product + 0.01f * Constants::spacing * Constants::spacing)));
 
-            viscosityAccelration += scalar_term * firstDerivativeKernel(p.position, neighbor.position, h);
+            viscosityAccelration += scalar_term * firstDerivativeKernel(p.position, neighbor.position);
 
         }
 
@@ -178,11 +180,10 @@ void calculateViscosityAccelration (std::vector<particle>& particles, float h, f
 
 // Find neighbours
 void findNeighbours(
-    float smoothing_radius,
     std::vector<particle>& particles
 ) {
     float smoothingRadiusSquared =
-        smoothing_radius * smoothing_radius;
+        Constants::kernelSupport * Constants::kernelSupport;
 
     for (auto& particle : particles)
     {

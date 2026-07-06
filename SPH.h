@@ -9,16 +9,16 @@
 float distance (sf::Vector2f xi, sf::Vector2f xj);
 
 // Kernel Functions
-float Kernel(sf::Vector2f xi, sf::Vector2f xj, float h);
-sf::Vector2f firstDerivativeKernel(sf::Vector2f xi, sf::Vector2f xj, float h);
+float Kernel( sf::Vector2f xi, sf::Vector2f xj );
+sf::Vector2f firstDerivativeKernel( sf::Vector2f xi, sf::Vector2f xj );
 
 // SPH Calculations
-void calculateDensity  ( std::vector<particle>& particles, float h , SPHParameters params );
-void calculatePressure ( std::vector<particle>& particles, float stiffnessCoefficient, float restDensity );
-void calculatePressureAcceleration (std::vector<particle>& particles, float h);
-void calculateViscosityAccelration (std::vector<particle>& particles, float h, float viscosityCoefficient);
+void calculateDensity  ( std::vector<particle>& particles );
+void calculatePressure ( std::vector<particle>& particles );
+void calculatePressureAcceleration (std::vector<particle>& particles );
+void calculateViscosityAccelration (std::vector<particle>& particles );
 
 // Neighbour search
-void findNeighbours( float smoothing_radius, std::vector<particle>& particles );
+void findNeighbours( std::vector<particle>& particles );
 
 #endif

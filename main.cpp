@@ -1,20 +1,21 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/Font.hpp>
 #include <iostream>
+#include "include/constants.hpp"
 #include "particle.h"
 #include "SPH.h"
 #include "utilities.h"
 
 
 // Create a bucket like container.
-void createContainer(std::vector<particle>& particles, float mass, SPHParameters params)
+void createContainer(std::vector<particle>& particles)
 {
-    float spacing = params.spacing;
+    float spacing = Constants::spacing;
 
     int width = 60;
     int height = 80;
 
-    sf::Vector2f origin(200.f, 500.f);
+    sf::Vector2f origin(250.f, 500.f);
 
     for (int layer = 0; layer < 2; layer++)
     {
@@ -24,9 +25,7 @@ void createContainer(std::vector<particle>& particles, float mass, SPHParameters
                 makeParticle(
                     origin + sf::Vector2f(i * spacing, layer * spacing),
                     true,
-                    sf::Color::Green,
-                    mass,
-                    params
+                    sf::Color::Green
                 )
             );
         }
@@ -40,9 +39,7 @@ void createContainer(std::vector<particle>& particles, float mass, SPHParameters
                 makeParticle(
                     origin + sf::Vector2f(layer * spacing, -i * spacing),
                     true,
-                    sf::Color::Green,
-                    mass,
-                    params
+                    sf::Color::Green
                 )
             );
         }
@@ -57,17 +54,14 @@ void createContainer(std::vector<particle>& particles, float mass, SPHParameters
                     origin + sf::Vector2f((width - 1) * spacing - layer * spacing,
                                           -i * spacing),
                     true,
-                    sf::Color::Green,
-                    mass,
-                    params
+                    sf::Color::Green
                 )
             );
         }
     }
 }
 
-void createFluid(std::vector<particle>& particles, float mass, SPHParameters params)
-{
+void createFluid( std::vector<particle>& particles ) {
 
     int cols = 20;
     int rows = 20; // 50 particles total
@@ -80,11 +74,9 @@ void createFluid(std::vector<particle>& particles, float mass, SPHParameters par
         {
             particles.push_back(
                 makeParticle(
-                    start + sf::Vector2f(x * params.spacing, y * params.spacing),
+                    start + sf::Vector2f(x * Constants::spacing , y * Constants::spacing),
                     false,
-                    sf::Color::Red,
-                    mass,
-                    params
+                    sf::Color::Red
                 )
             );
         }
@@ -110,27 +102,8 @@ int main()
     debugText.setFillColor(sf::Color::White);
 
 
-
-
-    SPHParameters params
-    {
-        .h = 5.f,
-        .spacing = params.h,
-        .dt = 0.0155f,
-        .kernel_support = 2.0f * params.spacing,
-        .restDensity = 1.1f,
-        .stiffness = 20000.f,
-        .viscosity = 50.f,
-        .gravity = {0.f, 9.8f},
-        .mass = params.restDensity * params.spacing * params.spacing
-    };
-
-
-
-
-
-    createFluid(particles, params.mass, params);
-    createContainer(particles, params.mass, params);
+    createFluid(particles);
+    createContainer(particles);
     int trackedParticle = 0;
 
 
@@ -179,7 +152,7 @@ int main()
         }
 
 
-        inputTimer += params.dt;
+        inputTimer += Constants::dt;
 
         sf::Vector2i mousePixel =
             sf::Mouse::getPosition(window);
@@ -219,14 +192,14 @@ int main()
 
 
         if(paused == 0){
-            findNeighbours(params.kernel_support, particles);
+            findNeighbours(particles);
 
-            calculateDensity(particles, params.kernel_support, params);
+            calculateDensity(particles);
 
-            calculatePressure(particles, params.stiffness, params.restDensity);
+            calculatePressure(particles);
 
-            calculatePressureAcceleration(particles, params.h);
-            calculateViscosityAccelration(particles, params.h, params.viscosity);
+            calculatePressureAcceleration(particles);
+            calculateViscosityAccelration(particles);
 
 
             for (auto& p : particles)
@@ -236,11 +209,11 @@ int main()
                 sf::Vector2f acceleration =
                     p.pressureAcceleration +
                     p.viscosityAcceleration +
-                    params.gravity;
+                    Constants::gravity;
 
-                p.velocity += acceleration * params.dt;
+                p.velocity += acceleration * Constants::dt;
 
-                p.position += p.velocity * params.dt;
+                p.position += p.velocity * Constants::dt;
 
 
 
