@@ -93,6 +93,7 @@ void calculateDensity (std::vector<particle>& particles) {
 
         float density = 0.0f;
 
+
         for (int neighborIndex : p.neighbors) {
 
             particle& neighbor = particles[neighborIndex];
@@ -130,19 +131,36 @@ void calculatePressureAcceleration (std::vector<particle>& particles) {
 
         sf::Vector2f pressureAcceleration{0.0f, 0.0f};
 
+        if (p.isBoundary == false) {
+    
+            for (int neighborIndex : p.neighbors) {
 
+                particle& neighbor = particles[neighborIndex];
 
-        for (int neighborIndex : p.neighbors) {
+                float neighborDensity;
+                float neighborPressure;
 
-            particle& neighbor = particles[neighborIndex];
+                if ( neighbor.isBoundary ) {
 
-            float pressureTerm = (p.pressure/(p.density * p.density)) + (neighbor.pressure/(neighbor.density * neighbor.density));
+                    neighborDensity = p.density;
+                    neighborPressure = p.pressure;
 
-            pressureAcceleration = pressureAcceleration + (-neighbor.mass * pressureTerm * firstDerivativeKernel(p.position, neighbor.position));
+                } else {
 
+                    neighborDensity = neighbor.density;
+                    neighborPressure = neighbor.pressure;
+
+                }
+
+                float pressureTerm = (p.pressure/(p.density * p.density)) + (neighborPressure/(neighborDensity * neighborDensity));
+
+                pressureAcceleration = pressureAcceleration + (-neighbor.mass * pressureTerm * firstDerivativeKernel(p.position, neighbor.position));
+
+           }
+
+            p.pressureAcceleration = pressureAcceleration;
         }
 
-        p.pressureAcceleration = pressureAcceleration;
 
     }
 

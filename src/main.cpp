@@ -63,10 +63,10 @@ void createContainer(std::vector<particle>& particles)
 
 void createFluid( std::vector<particle>& particles ) {
 
-    int cols = 20;
-    int rows = 20; // 50 particles total
+    int cols = 30;
+    int rows = 30; // 50 particles total
 
-    sf::Vector2f start(360.f, 300.f);
+    sf::Vector2f start(260.f, 493.f);
 
     for (int y = 0; y < rows; y++)
     {
@@ -74,7 +74,7 @@ void createFluid( std::vector<particle>& particles ) {
         {
             particles.push_back(
                 makeParticle(
-                    start + sf::Vector2f(x * Constants::spacing , y * Constants::spacing),
+                    start + sf::Vector2f(x * Constants::spacing , - y * Constants::spacing),
                     false,
                     CustomColors::Fluid
                 )

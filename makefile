@@ -8,14 +8,14 @@ TARGET = app
 
 SRC = src/main.cpp src/SPH.cpp src/utilities.cpp
 
-OBJ = $(SRC:.cpp=.o)
+OBJ = build/main.o build/SPH.o build/utilities.o
 
 all: $(TARGET)
 
 $(TARGET): $(OBJ)
 	$(CXX) $(OBJ) -o $(TARGET) $(LDFLAGS)
 
-%.o: %.cpp
+build/%.o: src/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 run: $(TARGET)
@@ -23,3 +23,5 @@ run: $(TARGET)
 
 clean:
 	rm -f $(TARGET) $(OBJ)
+
+
