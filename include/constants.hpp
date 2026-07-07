@@ -1,6 +1,7 @@
 #ifndef CONSTANTS_H_
 #define CONSTANTS_H_
 
+#include <SFML/Graphics/Color.hpp>
 #include <SFML/System/Vector2.hpp>
 
 
@@ -18,6 +19,16 @@ namespace Constants {
 	inline constexpr float stiffness     = 20000.0f;
 
 	inline constexpr sf::Vector2f gravity = { 0.f, 9.8f };
+
+}
+
+
+namespace CustomColors {
+
+    inline constexpr sf::Color Background{22, 24, 32};
+    inline constexpr sf::Color Fluid{90, 140, 190};
+    inline constexpr sf::Color Boundary{140, 140, 150};
+
 
 }
 

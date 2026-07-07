@@ -20,7 +20,7 @@ class particle {
         sf::Vector2f pressureAcceleration{0.0f, 0.0f};
         sf::Vector2f viscosityAcceleration{0.0f, 0.0f};
 
-        bool isStatic = false;
+        bool isBoundary = false;
 
         std::vector<int> neighbors;
 

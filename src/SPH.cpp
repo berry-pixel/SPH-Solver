@@ -1,9 +1,7 @@
-#include "SPH.h"
-#include "include/constants.hpp"
-#include "particle.h"
-#include "utilities.h"
+#include "../include/SPH.hpp"
+#include "../include/constants.hpp"
+#include "../include/particle.hpp"
 #include <SFML/Graphics/Color.hpp>
-#include <algorithm>
 #include <cmath>
 #include <iostream>
 
@@ -188,11 +186,6 @@ void findNeighbours(
     for (auto& particle : particles)
     {
         particle.neighbors.clear();
-        if(particle.isStatic) {
-            particle.color = sf::Color::Green;
-        } else {
-            particle.color = sf::Color::Blue;
-        }
     }
 
     for (int i = 0; i < particles.size(); i++)
@@ -219,7 +212,7 @@ void findNeighbours(
 
                 // for debugging:
                 if (i == 0) {
-                    particles[j].color = sf::Color::White;
+     //               particles[j].color = sf::Color::White;
                 }
 
                 particles[i].neighbors.push_back(j);

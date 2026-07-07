@@ -1,11 +1,13 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -O2 -Wall -Wextra
+CXXFLAGS = -std=c++17 -O2 -Wall -Wextra \
+           -Iinclude
 
 LDFLAGS = -lsfml-graphics -lsfml-window -lsfml-system
 
 TARGET = app
 
-SRC = main.cpp SPH.cpp utilities.cpp
+SRC = src/main.cpp src/SPH.cpp src/utilities.cpp
+
 OBJ = $(SRC:.cpp=.o)
 
 all: $(TARGET)

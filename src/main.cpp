@@ -1,10 +1,10 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/Font.hpp>
 #include <iostream>
-#include "include/constants.hpp"
-#include "particle.h"
-#include "SPH.h"
-#include "utilities.h"
+#include "../include/constants.hpp"
+#include "../include/particle.hpp"
+#include "../include/utilities.hpp"
+#include "../include/SPH.hpp"
 
 
 // Create a bucket like container.
@@ -25,7 +25,7 @@ void createContainer(std::vector<particle>& particles)
                 makeParticle(
                     origin + sf::Vector2f(i * spacing, layer * spacing),
                     true,
-                    sf::Color::Green
+                    CustomColors::Boundary
                 )
             );
         }
@@ -39,7 +39,7 @@ void createContainer(std::vector<particle>& particles)
                 makeParticle(
                     origin + sf::Vector2f(layer * spacing, -i * spacing),
                     true,
-                    sf::Color::Green
+                    CustomColors::Boundary
                 )
             );
         }
@@ -54,7 +54,7 @@ void createContainer(std::vector<particle>& particles)
                     origin + sf::Vector2f((width - 1) * spacing - layer * spacing,
                                           -i * spacing),
                     true,
-                    sf::Color::Green
+                    CustomColors::Boundary
                 )
             );
         }
@@ -76,7 +76,7 @@ void createFluid( std::vector<particle>& particles ) {
                 makeParticle(
                     start + sf::Vector2f(x * Constants::spacing , y * Constants::spacing),
                     false,
-                    sf::Color::Red
+                    CustomColors::Fluid
                 )
             );
         }
@@ -204,7 +204,7 @@ int main()
 
             for (auto& p : particles)
             {
-                if (p.isStatic) continue;
+                if (p.isBoundary) continue;
 
                 sf::Vector2f acceleration =
                     p.pressureAcceleration +
@@ -220,7 +220,7 @@ int main()
             }
         }
 
-        window.clear(sf::Color(72, 72, 72, 255));
+        window.clear(CustomColors::Background);
 
         for (auto& p : particles)
         {
@@ -231,7 +231,7 @@ int main()
                 p.position.y - p.radius
             });
 
-            if (p.isStatic)
+            if (p.isBoundary)
                 c.setFillColor(p.color);
             else{
                 // float ratio = std::clamp(

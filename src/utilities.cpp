@@ -1,5 +1,5 @@
-#include "utilities.h"
-#include "include/constants.hpp"
+#include "../include/utilities.hpp"
+#include "../include/constants.hpp"
 
 
 particle makeParticle(sf::Vector2f pos, bool isStatic, sf::Color color)
@@ -8,7 +8,7 @@ particle makeParticle(sf::Vector2f pos, bool isStatic, sf::Color color)
     p.position = pos;
     p.mass = Constants::mass;
     p.radius = Constants::radius;
-    p.isStatic = isStatic;
+    p.isBoundary = isStatic;
     p.density = Constants::restDensity;
     p.color = color;
     return p;

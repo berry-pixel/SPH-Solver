@@ -2,8 +2,8 @@
 #define SPH_H
 
 #include <SFML/Graphics.hpp>
-#include "particle.h"
-#include "utilities.h"
+#include "particle.hpp"
+#include "utilities.hpp"
 
 // Utility functions
 float distance (sf::Vector2f xi, sf::Vector2f xj);
