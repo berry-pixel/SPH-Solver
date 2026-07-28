@@ -174,13 +174,25 @@ void calculateViscosityAccelration (std::vector<particle>& particles) {
 
             particle& neighbor = particles[neighborIndex];
 
+            float neighborDensity;
+
+            if (neighbor.isBoundary)
+            {
+                // Mirror fluid properties at the boundary
+                neighborDensity = p.density;
+            }
+            else
+            {
+                neighborDensity = neighbor.density;
+            }
+
             sf::Vector2f delta_velocity = (p.velocity - neighbor.velocity);
             sf::Vector2f delta_position = p.position - neighbor.position;
             float dot_product = delta_velocity.x * delta_position.x + delta_velocity.y * delta_position.y;
             float position_dot_product = delta_position.x * delta_position.x + delta_position.y * delta_position.y;
 
 
-            float scalar_term = (Constants::viscosity * (neighbor.mass/neighbor.density) * (dot_product/(position_dot_product + 0.01f * Constants::spacing * Constants::spacing)));
+            float scalar_term = (Constants::viscosity * (neighbor.mass/neighborDensity) * (dot_product/(position_dot_product + 0.01f * Constants::spacing * Constants::spacing)));
 
             viscosityAccelration += scalar_term * firstDerivativeKernel(p.position, neighbor.position);
 

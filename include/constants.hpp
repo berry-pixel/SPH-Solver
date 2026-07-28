@@ -12,14 +12,14 @@ namespace Constants {
 	inline constexpr float radius        = spacing/2;
 	inline constexpr float kernelSupport = spacing * 2;
 
-	inline constexpr float dt            = 0.0035f;
+	inline  float dt            = 0.0015f;
 	inline constexpr float restDensity   = 1.1f;
 	inline constexpr float mass          = restDensity * spacing * spacing;
 
-	inline constexpr float viscosity     = 80.0f;
-	inline constexpr float stiffness     = 16000.0f;
+	inline  float viscosity     = 100.0f;
+	inline  float stiffness     = 16000.0f;
 
-	inline constexpr sf::Vector2f gravity = { 0.f, 9.8f };
+	inline  sf::Vector2f gravity = { 0.f, 9.8f };
 
 	inline constexpr float windowHeight = 1200;
 	inline constexpr float windowWidth = 800;
