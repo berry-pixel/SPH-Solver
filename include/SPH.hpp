@@ -3,7 +3,6 @@
 
 #include <SFML/Graphics.hpp>
 #include "particle.hpp"
-#include "utilities.hpp"
 
 // Utility functions
 float distance (sf::Vector2f xi, sf::Vector2f xj);
@@ -20,5 +19,6 @@ void calculateViscosityAccelration (std::vector<particle>& particles );
 
 // Neighbour search
 void findNeighbours( std::vector<particle>& particles );
+void findNeighboursGridSearch( std::vector<particle>& particles );
 
 #endif

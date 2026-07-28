@@ -4,6 +4,7 @@
 #include <SFML/Graphics/Color.hpp>
 #include <cmath>
 #include <iostream>
+#include <vector>
 
 
 float distance(sf::Vector2f xi, sf::Vector2f xj) {
@@ -11,7 +12,7 @@ float distance(sf::Vector2f xi, sf::Vector2f xj) {
     float dx = xi.x - xj.x;
     float dy = xi.y - xj.y;
 
-    return sqrt((dx * dx) + (dy * dy));
+    return std::sqrt(dx * dx + dy * dy);
 
 }
 
@@ -20,8 +21,6 @@ float distance(sf::Vector2f xi, sf::Vector2f xj) {
 float Kernel(sf::Vector2f xi, sf::Vector2f xj) {
 
     float distance_xi_xj = distance(xi, xj);
-
-    float alpha = (5/(14.0f * M_PI));
 
 
     float q = distance_xi_xj/Constants::spacing;
@@ -41,10 +40,9 @@ float Kernel(sf::Vector2f xi, sf::Vector2f xj) {
     }
 
 
-    float kernel = alpha * t / (Constants::spacing * Constants::spacing);
+    float kernel = Constants::kernelAlpha * t;
 
 
-    std::cout<<"\n kernel debugging :"<<kernel;
     return kernel;
 }
 
@@ -132,7 +130,7 @@ void calculatePressureAcceleration (std::vector<particle>& particles) {
         sf::Vector2f pressureAcceleration{0.0f, 0.0f};
 
         if (p.isBoundary == false) {
-    
+
             for (int neighborIndex : p.neighbors) {
 
                 particle& neighbor = particles[neighborIndex];
@@ -236,6 +234,89 @@ void findNeighbours(
                 particles[i].neighbors.push_back(j);
             }
 
+        }
+    }
+}
+
+void findNeighboursGridSearch(std::vector<particle>& particles)
+{
+    const float cellSize = Constants::kernelSupport;
+    const float supportSquared = cellSize * cellSize;
+
+    const int gridWidth =
+        std::ceil(Constants::windowWidth / cellSize);
+
+    const int gridHeight =
+        std::ceil(Constants::windowHeight / cellSize);
+
+    struct Cell
+    {
+        std::vector<int> particles;
+    };
+
+    std::vector<Cell> grid(gridWidth * gridHeight);
+
+    // Clear neighbour lists
+    for (auto& p : particles)
+        p.neighbors.clear();
+
+    // Insert particles into grid
+    for (int i = 0; i < particles.size(); i++)
+    {
+        int cx = particles[i].position.x / cellSize;
+        int cy = particles[i].position.y / cellSize;
+
+        if (cx < 0 || cx >= gridWidth ||
+            cy < 0 || cy >= gridHeight)
+        {
+            continue;
+        }
+
+
+        grid[cy * gridWidth + cx].particles.push_back(i);
+    }
+
+    // Find neighbours
+    for (int i = 0; i < particles.size(); i++)
+    {
+        int cx = particles[i].position.x / cellSize;
+        int cy = particles[i].position.y / cellSize;
+
+
+
+        for (int dy = -1; dy <= 1; dy++)
+        {
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                int nx = cx + dx;
+                int ny = cy + dy;
+
+                if (nx < 0 || nx >= gridWidth ||
+                    ny < 0 || ny >= gridHeight)
+                    continue;
+
+                Cell& cell = grid[ny * gridWidth + nx];
+
+                for (int j : cell.particles)
+                {
+                    if (i == j)
+                    {
+                        particles[i].neighbors.push_back(j);
+                        continue;
+                    }
+
+                    sf::Vector2f delta =
+                        particles[j].position -
+                        particles[i].position;
+
+                    float distSquared =
+                        delta.x * delta.x +
+                        delta.y * delta.y;
+
+                    if (distSquared < supportSquared)
+                        particles[i].neighbors.push_back(j);
+                }
+            }
         }
     }
 }

@@ -3,6 +3,7 @@
 
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/System/Vector2.hpp>
+#include <cmath>
 
 
 namespace Constants {
@@ -11,14 +12,21 @@ namespace Constants {
 	inline constexpr float radius        = spacing/2;
 	inline constexpr float kernelSupport = spacing * 2;
 
-	inline constexpr float dt            = 0.0255f;
+	inline constexpr float dt            = 0.0035f;
 	inline constexpr float restDensity   = 1.1f;
 	inline constexpr float mass          = restDensity * spacing * spacing;
 
-	inline constexpr float viscosity     = 50.0f;
-	inline constexpr float stiffness     = 15000.0f;
+	inline constexpr float viscosity     = 80.0f;
+	inline constexpr float stiffness     = 16000.0f;
 
 	inline constexpr sf::Vector2f gravity = { 0.f, 9.8f };
+
+	inline constexpr float windowHeight = 1200;
+	inline constexpr float windowWidth = 800;
+
+
+	constexpr float kernelAlpha =
+        5.0f / (14.0f * M_PI * spacing * spacing);
 
 }
 

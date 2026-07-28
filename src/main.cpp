@@ -12,7 +12,7 @@ void createContainer(std::vector<particle>& particles)
 {
     float spacing = Constants::spacing;
 
-    int width = 60;
+    int width = 120;
     int height = 80;
 
     sf::Vector2f origin(250.f, 500.f);
@@ -63,8 +63,8 @@ void createContainer(std::vector<particle>& particles)
 
 void createFluid( std::vector<particle>& particles ) {
 
-    int cols = 30;
-    int rows = 30; // 50 particles total
+    int cols = 40;
+    int rows = 40; // 50 particles total
 
     sf::Vector2f start(260.f, 493.f);
 
@@ -75,6 +75,119 @@ void createFluid( std::vector<particle>& particles ) {
             particles.push_back(
                 makeParticle(
                     start + sf::Vector2f(x * Constants::spacing , - y * Constants::spacing),
+                    false,
+                    CustomColors::Fluid
+                )
+            );
+        }
+    }
+}
+
+
+void createContainerWithBarrier(std::vector<particle>& particles)
+{
+    float spacing = Constants::spacing;
+
+    int width = 130;
+    int height = 80;
+
+    sf::Vector2f origin(250.f, 500.f);
+
+    for (int layer = 0; layer < 2; layer++)
+    {
+        for (int i = 0; i < width; i++)
+        {
+            particles.push_back(
+                makeParticle(
+                    origin + sf::Vector2f(i * spacing,
+                                          layer * spacing),
+                    true,
+                    CustomColors::Boundary
+                )
+            );
+        }
+    }
+
+    // Left wall
+    for (int layer = 0; layer < 2; layer++)
+    {
+        for (int i = 0; i < height; i++)
+        {
+            particles.push_back(
+                makeParticle(
+                    origin + sf::Vector2f(layer * spacing,
+                                          -i * spacing),
+                    true,
+                    CustomColors::Boundary
+                )
+            );
+        }
+    }
+
+    // Right wall
+    for (int layer = 0; layer < 2; layer++)
+    {
+        for (int i = 0; i < height; i++)
+        {
+            particles.push_back(
+                makeParticle(
+                    origin + sf::Vector2f(
+                        (width - 1) * spacing - layer * spacing,
+                        -i * spacing
+                    ),
+                    true,
+                    CustomColors::Boundary
+                )
+            );
+        }
+    }
+
+    int barrierX = width / 2;
+
+    int holeSize = 4;
+    int holeStart = 1;
+
+    for (int layer = 0; layer < 2; layer++)
+    {
+        for (int i = 0; i < height; i++)
+        {
+            if (i >= holeStart &&
+                i < holeStart + holeSize)
+            {
+                continue;
+            }
+
+            particles.push_back(
+                makeParticle(
+                    origin + sf::Vector2f(
+                        barrierX * spacing + layer * spacing,
+                        -i * spacing
+                    ),
+                    true,
+                    CustomColors::Boundary
+                )
+            );
+        }
+    }
+}
+
+void createFluidLeftOfBarrier(std::vector<particle>& particles)
+{
+    int cols = 50;
+    int rows = 35;
+
+    sf::Vector2f start(260.f, 493.f);
+
+    for (int y = 0; y < rows; y++)
+    {
+        for (int x = 0; x < cols; x++)
+        {
+            particles.push_back(
+                makeParticle(
+                    start + sf::Vector2f(
+                        x * Constants::spacing,
+                        -y * Constants::spacing
+                    ),
                     false,
                     CustomColors::Fluid
                 )
@@ -102,8 +215,11 @@ int main()
     debugText.setFillColor(sf::Color::White);
 
 
-    createFluid(particles);
-    createContainer(particles);
+    // createFluid(particles);
+    // createContainer(particles);
+
+    createContainerWithBarrier(particles);
+    createFluidLeftOfBarrier(particles);
     int trackedParticle = 0;
 
 
@@ -169,9 +285,9 @@ int main()
             float dx = p.position.x - mouse.x;
             float dy = p.position.y - mouse.y;
 
-            float dist = std::sqrt(dx*dx + dy*dy);
+            float dist = (dx*dx + dy*dy);
 
-            if (dist < bestDist)
+            if (dist < bestDist * bestDist)
             {
                 bestDist = dist;
                 hovered = &p;
@@ -180,7 +296,7 @@ int main()
 
 
 
-        window.setKeyRepeatEnabled(false);
+        // window.setKeyRepeatEnabled(false);
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::P)){
             paused = 1;
             inputTimer = 0.f;
@@ -192,7 +308,10 @@ int main()
 
 
         if(paused == 0){
-            findNeighbours(particles);
+            // findNeighbours(particles);
+
+            findNeighboursGridSearch(particles);
+
 
             calculateDensity(particles);
 
@@ -222,9 +341,10 @@ int main()
 
         window.clear(CustomColors::Background);
 
+
+        sf::CircleShape c(Constants::radius);
         for (auto& p : particles)
         {
-            sf::CircleShape c(p.radius);
 
             c.setPosition({
                 p.position.x - p.radius,
