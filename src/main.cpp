@@ -1,7 +1,5 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/Font.hpp>
-#include <cmath>
-#include <iostream>
 #include "../include/constants.hpp"
 #include "../include/particle.hpp"
 #include "../include/utilities.hpp"
@@ -14,6 +12,9 @@
 #include <filesystem>
 #include <imgui.h>
 #include <imgui-SFML.h>
+#include <fstream>
+#include <cmath>
+#include <iostream>
 
 enum class EditorMode
 {
@@ -21,9 +22,120 @@ enum class EditorMode
     Line
 };
 
+void saveDensityData(
+    const std::vector<float>& timeData,
+    const std::vector<float>& densityData,
+    const std::string& sceneName)
+{
+    std::ofstream file(
+        "density_" + sceneName + ".csv"
+    );
+
+    file << "time,average_density\n";
+
+    for (size_t i = 0; i < timeData.size(); ++i)
+    {
+        file << timeData[i] << ","
+             << densityData[i] << "\n";
+    }
+}
+
+void saveCFLData(
+    const std::vector<float>& timeData,
+    const std::vector<float>& cflData,
+    const std::string& sceneName)
+{
+    std::ofstream file(
+        "cfl_" + sceneName + ".csv"
+    );
+    file << "time,cfl\n";
+
+    for (size_t i = 0; i < timeData.size(); ++i)
+    {
+        file << timeData[i] << ","
+             << cflData[i] << "\n";
+    }
+}
+
+void benchmarkNeighbourSearch(int particleCount)
+{
+    std::vector<particle> particles;
+
+    // Create a simple fixed particle configuration
+    for (int i = 0; i < particleCount; ++i)
+    {
+        float x = 100.f + (i % 100) * Constants::spacing;
+        float y = 100.f + (i / 100) * Constants::spacing;
+
+        particles.push_back(
+            makeParticle(
+                {x, y},
+                false,
+                sf::Color::White
+            )
+        );
+    }
+
+    const int benchmarkRuns = 200;
+
+    double bruteForceTotal = 0.0;
+    double gridTotal = 0.0;
+
+    // Brute-force
+    for (int i = 0; i < benchmarkRuns; ++i)
+    {
+        auto start = std::chrono::high_resolution_clock::now();
+
+        findNeighbours(particles);
+
+        auto end = std::chrono::high_resolution_clock::now();
+
+        bruteForceTotal +=
+            std::chrono::duration<double, std::milli>(
+                end - start
+            ).count();
+    }
+
+    // Grid search
+    for (int i = 0; i < benchmarkRuns; ++i)
+    {
+        auto start = std::chrono::high_resolution_clock::now();
+
+        findNeighboursGridSearch(particles);
+
+        auto end = std::chrono::high_resolution_clock::now();
+
+        gridTotal +=
+            std::chrono::duration<double, std::milli>(
+                end - start
+            ).count();
+    }
+
+    double bruteForceAverage =
+        bruteForceTotal / benchmarkRuns;
+
+    double gridAverage =
+        gridTotal / benchmarkRuns;
+
+    std::cout
+        << particleCount << ", "
+        << bruteForceAverage << ", "
+        << gridAverage << "\n";
+}
 
 int main()
 {
+
+    // benchmarkNeighbourSearch(100);
+    // benchmarkNeighbourSearch(250);
+    // benchmarkNeighbourSearch(500);
+    // benchmarkNeighbourSearch(1000);
+    // benchmarkNeighbourSearch(2000);
+    // benchmarkNeighbourSearch(5000);
+    // benchmarkNeighbourSearch(10000);
+
+    // return 0;
+
     sf::RenderWindow window(sf::VideoMode({1200, 800}), "SPH");
 
 
@@ -39,6 +151,15 @@ int main()
     FrameRecorder recorder;
 
 
+    double neighbourSearchTotalTime = 0.0;
+    int neighbourSearchSamples = 0;
+
+
+    std::vector<float> densityData;
+    std::vector<float> timeData;
+    std::vector<float> cflData;
+
+
     bool paused = true;
     bool recording = false;
     int frameNumber = 0;
@@ -49,6 +170,10 @@ int main()
 
     bool editing = false;
     bool placingBoundary = false;
+
+    float simulationTime = 0.f;
+    float averageDensity = 0.f;
+    float cflNumber = 0.f;
 
 
     const sf::Font font("arial.ttf");
@@ -243,13 +368,59 @@ int main()
         }
 
 
+
+
+        // The actual simulation step //
         if(paused == 0){
+
+            simulationTime += Constants::dt;
+
+            auto start = std::chrono::high_resolution_clock::now();
+
+
             // findNeighbours(particles);
 
             findNeighboursGridSearch(particles);
 
+            auto end = std::chrono::high_resolution_clock::now();
+
+
+
+
+            auto duration =
+                std::chrono::duration<double, std::milli>(end - start);
+
+            neighbourSearchTotalTime += duration.count();
+            neighbourSearchSamples++;
+
 
             calculateDensity(particles);
+
+            // This is for average density
+            float densitySum = 0.f;
+            int fluidParticles = 0;
+
+            for (const auto& p : particles)
+            {
+                if (p.isBoundary)
+                    continue;
+
+                densitySum += p.density;
+                fluidParticles++;
+            }
+
+            if (fluidParticles > 0)
+            {
+                averageDensity = densitySum / fluidParticles;
+
+                timeData.push_back(simulationTime);
+                densityData.push_back(averageDensity);
+
+                cflData.push_back(cflNumber);
+
+            }
+            ////////////////////////////////
+
 
             calculatePressure(particles);
 
@@ -268,10 +439,33 @@ int main()
 
                 p.velocity += acceleration * Constants::dt;
 
+            }
+
+            // calculate CFL
+            float maxVelocity = 0.f;
+
+            for (const auto& p : particles)
+            {
+                if (p.isBoundary)
+                    continue;
+
+                float speed = std::sqrt(
+                    p.velocity.x * p.velocity.x +
+                    p.velocity.y * p.velocity.y
+                );
+
+                maxVelocity = std::max(maxVelocity, speed);
+            }
+
+            cflNumber = maxVelocity * Constants::dt / Constants::spacing;
+
+            // update position
+            for (auto& p : particles)
+            {
+                if (p.isBoundary)
+                    continue;
+
                 p.position += p.velocity * Constants::dt;
-
-
-
             }
         }
 
@@ -296,6 +490,13 @@ int main()
                     particles.clear();
                     scenes[selectedScene].construct(particles);
 
+                    simulationTime = 0.f;
+                    averageDensity = 0.f;
+
+                    timeData.clear();
+                    densityData.clear();
+
+
                     paused = true;
                 }
 
@@ -307,6 +508,23 @@ int main()
         }
 
         ImGui::Text("Particles: %d", (int)particles.size());
+
+        ImGui::Text(
+            "Average Density: %.2f",
+            averageDensity
+        );
+
+        if (ImGui::Button("Save Density Data"))
+        {
+            saveDensityData(timeData, densityData, scenes[selectedScene].name);
+        }
+
+
+        if (ImGui::Button("Save CFL Data"))
+        {
+            saveCFLData(timeData, cflData, scenes[selectedScene].name);
+        }
+
 
         if (ImGui::Button(paused ? "Resume" : "Pause"))
         {
@@ -508,5 +726,17 @@ int main()
         ImGui::SFML::Render(window);
 
         window.display();
+
+        if (simulationTime >= 20.f && neighbourSearchSamples > 0)
+        {
+            double averageTime =
+                neighbourSearchTotalTime / neighbourSearchSamples;
+
+            std::cout << "Average neighbour search time: "
+                      << averageTime
+                      << " ms\n";
+
+            paused = true;
+        }
     }
 }
