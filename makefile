@@ -12,6 +12,8 @@ SRC = \
     src/main.cpp \
     src/SPH.cpp \
     src/utilities.cpp \
+    src/scene.cpp \
+    src/frame_recorder.cpp \
     external/imgui/imgui.cpp \
     external/imgui/imgui_draw.cpp \
     external/imgui/imgui_widgets.cpp \
@@ -36,5 +38,3 @@ run: $(TARGET)
 
 clean:
 	rm -f $(TARGET) $(OBJ)
-
-

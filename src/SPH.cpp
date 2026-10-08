@@ -268,11 +268,9 @@ void findNeighboursGridSearch(std::vector<particle>& particles)
 
     std::vector<Cell> grid(gridWidth * gridHeight);
 
-    // Clear neighbour lists
     for (auto& p : particles)
         p.neighbors.clear();
 
-    // Insert particles into grid
     for (int i = 0; i < particles.size(); i++)
     {
         int cx = particles[i].position.x / cellSize;
@@ -288,7 +286,6 @@ void findNeighboursGridSearch(std::vector<particle>& particles)
         grid[cy * gridWidth + cx].particles.push_back(i);
     }
 
-    // Find neighbours
     for (int i = 0; i < particles.size(); i++)
     {
         int cx = particles[i].position.x / cellSize;
@@ -313,6 +310,7 @@ void findNeighboursGridSearch(std::vector<particle>& particles)
                 {
                     if (i == j)
                     {
+                        // if the particles are in the same grid
                         particles[i].neighbors.push_back(j);
                         continue;
                     }

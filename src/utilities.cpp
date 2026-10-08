@@ -13,3 +13,33 @@ particle makeParticle(sf::Vector2f pos, bool isStatic, sf::Color color)
     p.color = color;
     return p;
 }
+
+
+void drawParticles(
+    sf::RenderTarget& target,
+    std::vector<particle>& particles
+)
+{
+    sf::CircleShape c(Constants::radius);
+
+    for (auto& p : particles)
+    {
+        c.setPosition({
+            p.position.x - p.radius,
+            p.position.y - p.radius
+        });
+
+        if (p.isBoundary)
+        {
+            c.setFillColor(p.color);
+        }
+        else
+        {
+            c.setFillColor(
+                sf::Color(119, 158, 203)
+            );
+        }
+
+        target.draw(c);
+    }
+}

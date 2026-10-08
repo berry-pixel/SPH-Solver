@@ -1,416 +1,55 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/Font.hpp>
+#include <cmath>
 #include <iostream>
 #include "../include/constants.hpp"
 #include "../include/particle.hpp"
 #include "../include/utilities.hpp"
 #include "../include/SPH.hpp"
+#include "../include/scene.hpp"
+#include "../include/frame_recorder.hpp"
+
+#include <iomanip>
+#include <sstream>
+#include <filesystem>
 #include <imgui.h>
 #include <imgui-SFML.h>
 
-
-// Create a bucket like container.
-void createContainer(std::vector<particle>& particles)
+enum class EditorMode
 {
-    float spacing = Constants::spacing;
-
-    int width = 120;
-    int height = 80;
-
-    sf::Vector2f origin(250.f, 500.f);
-
-    for (int layer = 0; layer < 3; layer++)
-    {
-        for (int i = 0; i < width; i++)
-        {
-            particles.push_back(
-                makeParticle(
-                    origin + sf::Vector2f(i * spacing, layer * spacing),
-                    true,
-                    CustomColors::Boundary
-                )
-            );
-        }
-    }
-
-    for (int layer = 0; layer < 2; layer++)
-    {
-        for (int i = 0; i < height; i++)
-        {
-            particles.push_back(
-                makeParticle(
-                    origin + sf::Vector2f(layer * spacing, -i * spacing),
-                    true,
-                    CustomColors::Boundary
-                )
-            );
-        }
-    }
-
-    for (int layer = 0; layer < 2; layer++)
-    {
-        for (int i = 0; i < height; i++)
-        {
-            particles.push_back(
-                makeParticle(
-                    origin + sf::Vector2f((width - 1) * spacing - layer * spacing,
-                                          -i * spacing),
-                    true,
-                    CustomColors::Boundary
-                )
-            );
-        }
-    }
-}
-
-void createFluid( std::vector<particle>& particles ) {
-
-    int cols = 40;
-    int rows = 40; // 50 particles total
-
-    sf::Vector2f start(260.f, 493.f);
-
-    for (int y = 0; y < rows; y++)
-    {
-        for (int x = 0; x < cols; x++)
-        {
-            particles.push_back(
-                makeParticle(
-                    start + sf::Vector2f(x * Constants::spacing , - y * Constants::spacing),
-                    false,
-                    CustomColors::Fluid
-                )
-            );
-        }
-    }
-}
-
-void createContainerWithFunnel(std::vector<particle>& particles)
-{
-    float spacing = Constants::spacing;
-
-    int width = 180;
-    int height = 90;
-
-    sf::Vector2f origin(170.f, 500.f);
-
-    // Bottom
-    for (int layer = 0; layer < 2; layer++)
-        for (int i = 0; i < width; i++)
-            particles.push_back(makeParticle(
-                origin + sf::Vector2f(i*spacing,
-                                      layer*spacing),
-                true,
-                CustomColors::Boundary));
-
-    // Side walls
-    for (int layer = 0; layer < 2; layer++)
-    {
-        for (int i = 0; i < height; i++)
-        {
-            particles.push_back(makeParticle(
-                origin + sf::Vector2f(layer*spacing,
-                                      -i*spacing),
-                true,
-                CustomColors::Boundary));
-
-            particles.push_back(makeParticle(
-                origin + sf::Vector2f((width-1)*spacing-layer*spacing,
-                                      -i*spacing),
-                true,
-                CustomColors::Boundary));
-        }
-    }
-
-    int funnelTop = 45;      // height where funnel starts
-    int funnelDepth = 25;    // how far down it goes
-
-    int funnelWidth = 50;    // width of the opening
-    int funnelCenter = width / 2;
-
-    // Left slope: wide top -> narrow bottom
-    for (int i = 0; i <= funnelDepth; i++)
-    {
-        float t = float(i) / funnelDepth;
-
-        int x = static_cast<int>(
-            funnelCenter - funnelWidth / 2 +
-            (funnelWidth / 2) * t
-        );
-
-        particles.push_back(
-            makeParticle(
-                origin + sf::Vector2f(
-                    x * spacing,
-                    -(funnelTop + i) * spacing
-                ),
-                true,
-                CustomColors::Boundary
-            )
-        );
-    }
-
-
-    // Right slope: wide top -> narrow bottom
-    for (int i = 0; i <= funnelDepth; i++)
-    {
-        float t = float(i) / funnelDepth;
-
-        int x = static_cast<int>(
-            funnelCenter + funnelWidth / 2 -
-            (funnelWidth / 2) * t
-        );
-
-        particles.push_back(
-            makeParticle(
-                origin + sf::Vector2f(
-                    x * spacing,
-                    -(funnelTop + i) * spacing
-                ),
-                true,
-                CustomColors::Boundary
-            )
-        );
-    }
-}
-
-void createFluidAboveFunnel(std::vector<particle>& particles)
-{
-    int cols = 60;
-    int rows = 30;
-
-    sf::Vector2f start(350.f, 250.f);
-
-    for (int y = 0; y < rows; y++)
-        for (int x = 0; x < cols; x++)
-            particles.push_back(makeParticle(
-                start +
-                sf::Vector2f(x*Constants::spacing,
-                            -y*Constants::spacing),
-                false,
-                CustomColors::Fluid));
-}
-
-void createContainerWithPlatforms(std::vector<particle>& particles)
-{
-    float spacing = Constants::spacing;
-
-    int width = 120;
-    int height = 80;
-
-    sf::Vector2f origin(250.f, 500.f);
-
-    // Bottom
-    for (int layer = 0; layer < 3; layer++)
-        for (int i = 0; i < width; i++)
-            particles.push_back(makeParticle(
-                origin + sf::Vector2f(i * spacing, layer * spacing),
-                true,
-                CustomColors::Boundary));
-
-    // Left wall
-    for (int layer = 0; layer < 2; layer++)
-        for (int i = 0; i < height; i++)
-            particles.push_back(makeParticle(
-                origin + sf::Vector2f(layer * spacing, -i * spacing),
-                true,
-                CustomColors::Boundary));
-
-    // Right wall
-    for (int layer = 0; layer < 2; layer++)
-        for (int i = 0; i < height; i++)
-            particles.push_back(makeParticle(
-                origin + sf::Vector2f((width-1)*spacing-layer*spacing,
-                                      -i*spacing),
-                true,
-                CustomColors::Boundary));
-
-    int platformLength = width / 3;
-
-    // Left platform
-    int leftHeight = 25;
-    for (int layer = 0; layer < 2; layer++)
-        for (int i = 0; i < platformLength; i++)
-            particles.push_back(makeParticle(
-                origin + sf::Vector2f(i*spacing,
-                                      -leftHeight*spacing-layer*spacing),
-                true,
-                CustomColors::Boundary));
-
-    // Right platform
-    int rightHeight = 50;
-    for (int layer = 0; layer < 2; layer++)
-        for (int i = 0; i < platformLength; i++)
-            particles.push_back(makeParticle(
-                origin + sf::Vector2f((width-platformLength+i)*spacing,
-                                      -rightHeight*spacing-layer*spacing),
-                true,
-                CustomColors::Boundary));
-}
-
-void createFluidOnPlatforms(std::vector<particle>& particles)
-{
-    int cols = 25;
-    int rows = 25;
-
-    // Above left platform
-    sf::Vector2f leftStart(
-        260.f,
-        500.f - 25 * Constants::spacing - 2 * Constants::spacing);
-
-    for (int y = 0; y < rows; y++)
-        for (int x = 0; x < cols; x++)
-            particles.push_back(makeParticle(
-                leftStart +
-                sf::Vector2f(x*Constants::spacing,
-                            -y*Constants::spacing),
-                false,
-                CustomColors::Fluid));
-
-    // Above right platform
-    sf::Vector2f rightStart(
-        250.f + (120-cols-2)*Constants::spacing,
-        500.f - 50 * Constants::spacing - 2 * Constants::spacing);
-
-    for (int y = 0; y < rows; y++)
-        for (int x = 0; x < cols; x++)
-            particles.push_back(makeParticle(
-                rightStart +
-                sf::Vector2f(x*Constants::spacing,
-                            -y*Constants::spacing),
-                false,
-                CustomColors::Fluid));
-}
-
-
-void createContainerWithBarrier(std::vector<particle>& particles)
-{
-    float spacing = Constants::spacing;
-
-    int width = 130;
-    int height = 80;
-
-    sf::Vector2f origin(250.f, 500.f);
-
-    for (int layer = 0; layer < 3; layer++)
-    {
-        for (int i = 0; i < width; i++)
-        {
-            particles.push_back(
-                makeParticle(
-                    origin + sf::Vector2f(i * spacing,
-                                          layer * spacing),
-                    true,
-                    CustomColors::Boundary
-                )
-            );
-        }
-    }
-
-    // Left wall
-    for (int layer = 0; layer < 2; layer++)
-    {
-        for (int i = 0; i < height; i++)
-        {
-            particles.push_back(
-                makeParticle(
-                    origin + sf::Vector2f(layer * spacing,
-                                          -i * spacing),
-                    true,
-                    CustomColors::Boundary
-                )
-            );
-        }
-    }
-
-    // Right wall
-    for (int layer = 0; layer < 2; layer++)
-    {
-        for (int i = 0; i < height; i++)
-        {
-            particles.push_back(
-                makeParticle(
-                    origin + sf::Vector2f(
-                        (width - 1) * spacing - layer * spacing,
-                        -i * spacing
-                    ),
-                    true,
-                    CustomColors::Boundary
-                )
-            );
-        }
-    }
-
-    int barrierX = width / 2;
-
-    int holeSize = 4;
-    int holeStart = 1;
-
-    for (int layer = 0; layer < 2; layer++)
-    {
-        for (int i = 0; i < height; i++)
-        {
-            if (i >= holeStart &&
-                i < holeStart + holeSize)
-            {
-                continue;
-            }
-
-            particles.push_back(
-                makeParticle(
-                    origin + sf::Vector2f(
-                        barrierX * spacing + layer * spacing,
-                        -i * spacing
-                    ),
-                    true,
-                    CustomColors::Boundary
-                )
-            );
-        }
-    }
-}
-
-void createFluidLeftOfBarrier(std::vector<particle>& particles)
-{
-    int cols = 50;
-    int rows = 35;
-
-    sf::Vector2f start(260.f, 493.f);
-
-    for (int y = 0; y < rows; y++)
-    {
-        for (int x = 0; x < cols; x++)
-        {
-            particles.push_back(
-                makeParticle(
-                    start + sf::Vector2f(
-                        x * Constants::spacing,
-                        -y * Constants::spacing
-                    ),
-                    false,
-                    CustomColors::Fluid
-                )
-            );
-        }
-    }
-}
-
-
-
+    Brush,
+    Line
+};
 
 
 int main()
 {
     sf::RenderWindow window(sf::VideoMode({1200, 800}), "SPH");
-    
+
+
+    sf::RenderTexture renderTexture;
+    renderTexture.resize({1200, 800});
+
     ImGui::SFML::Init(window);
 
     sf::Clock deltaClock;
 
     std::vector<particle> particles;
 
+    FrameRecorder recorder;
+
 
     bool paused = true;
+    bool recording = false;
+    int frameNumber = 0;
+
+    bool lineStartSet = false;
+    EditorMode editorMode = EditorMode::Brush;
+    sf::Vector2f lineStart;
+
+    bool editing = false;
+    bool placingBoundary = false;
+
 
     const sf::Font font("arial.ttf");
     sf::Text debugText(font);
@@ -418,14 +57,43 @@ int main()
     debugText.setFillColor(sf::Color::White);
 
 
-    createFluid(particles);
-    createContainer(particles);
+    std::vector<Scene> scenes = createScenes();
+    int selectedScene = 0;
 
-    // createContainerWithBarrier(particles);
-    // createFluidLeftOfBarrier(particles);
+    scenes[selectedScene].construct(particles);
 
-    // createContainerWithPlatforms(particles);
-    // createFluidOnPlatforms(particles);
+        // particle falling;
+        // falling = makeParticle(
+        //     {250.f, 200.f},
+        //     false,
+        //     sf::Color::Red,
+        //     params.mass,
+        //     params
+        // );
+
+        // particles.push_back(falling);
+
+
+
+
+        // sf::Vector2f start(200.f, 300.f);
+        // for (int row = 0; row < 2; row++)
+        // {
+        //     for (int col = 0; col < 20; col++)
+        //     {
+        //         particle p;
+        //         p = makeParticle(
+        //             start + sf::Vector2f(col * params.spacing, row * params.spacing),
+        //             true,
+        //             sf::Color::Green,
+        //             params.mass,
+        //             params
+        //         );
+
+
+        //         particles.push_back(p);
+        //     }
+        // }
 
 
 
@@ -433,51 +101,66 @@ int main()
 
 
 
-    // particle falling;
-    // falling = makeParticle(
-    //     {250.f, 200.f},
-    //     false,
-    //     sf::Color::Red,
-    //     params.mass,
-    //     params
-    // );
-
-    // particles.push_back(falling);
-
-
-
-
-    // sf::Vector2f start(200.f, 300.f);
-    // for (int row = 0; row < 2; row++)
-    // {
-    //     for (int col = 0; col < 20; col++)
-    //     {
-    //         particle p;
-    //         p = makeParticle(
-    //             start + sf::Vector2f(col * params.spacing, row * params.spacing),
-    //             true,
-    //             sf::Color::Green,
-    //             params.mass,
-    //             params
-    //         );
-
-
-    //         particles.push_back(p);
-    //     }
-    // }
-
     float inputTimer = 0.f;
 
-    while (window.isOpen())
-    {
-        while (auto event = window.pollEvent())
-        {
+
+    float recordingTimer = 0.f;
+    const float recordingInterval = 1.f / 30.f;
+
+    while (window.isOpen()) {
+        while (auto event = window.pollEvent()) {
 
 
             ImGui::SFML::ProcessEvent(window, *event);
 
             if (event->is<sf::Event::Closed>())
                 window.close();
+
+            if (editing &&
+                editorMode == EditorMode::Line &&
+                !ImGui::GetIO().WantCaptureMouse) {
+                if (const auto* mousePressed =
+                        event->getIf<sf::Event::MouseButtonPressed>()) {
+                    if (mousePressed->button == sf::Mouse::Button::Left) {
+                        sf::Vector2i pixelPosition =
+                            mousePressed->position;
+
+                        sf::Vector2f clickPosition =
+                            window.mapPixelToCoords(pixelPosition);
+
+                        if (!lineStartSet) {
+                            lineStart = clickPosition;
+                            lineStartSet = true;
+                        }
+                        else {
+                            sf::Vector2f lineEnd = clickPosition;
+                            sf::Vector2f direction = lineEnd - lineStart;
+
+                            float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+                            if (length > 0.f) {
+                                    direction /= length;
+
+                                    int particleCount = static_cast<int>( length / Constants::spacing );
+
+                                    for (int i = 0; i <= particleCount; ++i) {
+                                        sf::Vector2f position = lineStart + direction * (i * Constants::spacing);
+
+                                        particle p = makeParticle(
+                                            position,
+                                            placingBoundary,
+                                            placingBoundary
+                                                ? sf::Color::White
+                                                : sf::Color(119, 158, 203)
+                                        );
+
+                                        particles.push_back(p);
+                                    }
+                                }
+                            lineStartSet = false;
+                        }
+                    }
+                }
+            }
 
         }
 
@@ -522,6 +205,43 @@ int main()
         }
 
 
+        if (editing &&
+            sf::Mouse::isButtonPressed(sf::Mouse::Button::Left))
+        {
+            sf::Vector2f position = mouse;
+
+            bool tooClose = false;
+
+            for (const auto& p : particles)
+            {
+                float dx = p.position.x - position.x;
+                float dy = p.position.y - position.y;
+
+                float distanceSquared = dx * dx + dy * dy;
+
+                float minDistance = Constants::spacing;
+
+                if (distanceSquared < minDistance * minDistance)
+                {
+                    tooClose = true;
+                    break;
+                }
+            }
+
+            if (!tooClose)
+            {
+                particle p = makeParticle(
+                    position,
+                    placingBoundary,
+                    placingBoundary
+                        ? sf::Color::White
+                        : sf::Color(119, 158, 203)
+                );
+
+                particles.push_back(p);
+            }
+        }
+
 
         if(paused == 0){
             // findNeighbours(particles);
@@ -557,6 +277,34 @@ int main()
 
         // IMgui window
         ImGui::Begin("Simulation");
+        ImGui::Text("Scene");
+
+        const char* sceneName = scenes[selectedScene].name.c_str();
+
+        if (ImGui::BeginCombo("##Scene", sceneName))
+        {
+            for (int i = 0; i < scenes.size(); i++)
+            {
+                bool selected = (selectedScene == i);
+
+                if (ImGui::Selectable(
+                        scenes[i].name.c_str(),
+                        selected))
+                {
+                    selectedScene = i;
+
+                    particles.clear();
+                    scenes[selectedScene].construct(particles);
+
+                    paused = true;
+                }
+
+                if (selected)
+                    ImGui::SetItemDefaultFocus();
+            }
+
+            ImGui::EndCombo();
+        }
 
         ImGui::Text("Particles: %d", (int)particles.size());
 
@@ -564,6 +312,21 @@ int main()
         {
             paused = !paused;
         }
+
+        if (ImGui::Button(recording ? "Stop Recording" : "Start Recording"))
+        {
+            recording = !recording;
+
+            if (recording)
+              {
+                  frameNumber = 0;
+                  recordingTimer = 0.f;
+
+                  recorder.startRecording();
+              }
+        }
+
+        ImGui::Text("Recorded Frames: %d", frameNumber);
 
         ImGui::SliderFloat("Gravity",
                         &Constants::gravity.y,
@@ -582,40 +345,95 @@ int main()
 
         ImGui::End();
 
-        window.clear(CustomColors::Background);
 
+        ImGui::SetNextWindowSize(
+            ImVec2(350.f, 500.f),
+            ImGuiCond_FirstUseEver
+        );
 
-        sf::CircleShape c(Constants::radius);
-        for (auto& p : particles)
+        ImGui::Begin("Editing");
+
+        if (ImGui::Checkbox("Edit Scene", &editing))
         {
+            if (editing)
+                paused = true;
 
-            c.setPosition({
-                p.position.x - p.radius,
-                p.position.y - p.radius
-            });
+            lineStartSet = false;
+        }
 
-            if (p.isBoundary)
-                c.setFillColor(p.color);
-            else{
-                // float ratio = std::clamp(
-                //     p.density / params.restDensity,
-                //     0.f,
-                //     2.f
-                // );
+        if (editing)
+        {
+            ImGui::Text("Editor Mode");
 
-                // int red = static_cast<int>(255.f * ratio / 2.f);
-                // int blue = static_cast<int>(255.f * (1.f - ratio / 2.f));
-                // c.setFillColor(
-                //     sf::Color(red, 0, blue)
-                // );
-                c.setFillColor(
-                    sf::Color(119, 158, 203)
+                if (ImGui::RadioButton(
+                        "Brush",
+                        editorMode == EditorMode::Brush)) {
+                    editorMode = EditorMode::Brush;
+                    lineStartSet = false;
+                }
+
+                ImGui::SameLine();
+
+                if (ImGui::RadioButton(
+                        "Line",
+                        editorMode == EditorMode::Line)) {
+                    editorMode = EditorMode::Line;
+                    lineStartSet = false;
+                }
+
+                ImGui::Text("Particle Type");
+
+                if (ImGui::RadioButton(
+                        "Fluid",
+                        !placingBoundary)) {
+                    placingBoundary = false;
+                }
+
+                ImGui::SameLine();
+
+                if (ImGui::RadioButton(
+                        "Boundary",
+                        placingBoundary)) {
+                    placingBoundary = true;
+                }
+        }
+        ImGui::End();
+
+        // Render simulation to texture
+        renderTexture.clear(CustomColors::Background);
+
+        drawParticles(renderTexture, particles);
+
+        renderTexture.display();
+
+
+        if (recording && !paused)
+        {
+            recordingTimer += Constants::dt;
+
+            if (recordingTimer >= recordingInterval)
+            {
+                sf::Image image =
+                    renderTexture.getTexture().copyToImage();
+
+                recorder.addFrame(
+                    std::move(image),
+                    frameNumber
                 );
 
-            }
+                frameNumber++;
 
-            window.draw(c);
+                recordingTimer -= recordingInterval;
+            }
         }
+
+
+        window.clear(CustomColors::Background);
+
+        sf::Sprite sprite(renderTexture.getTexture());
+        window.draw(sprite);
+
+        // drawParticles(window, particles);
 
         // std::cout
         //   << "rho = " << particles[0].density
